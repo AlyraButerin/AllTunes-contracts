@@ -12,16 +12,16 @@ async function main() {
 
   const lockedAmount = hre.ethers.parseEther("0.001");
 
-  const iSCRRegistry = await hre.ethers.deployContract(
-    "ISCRRegistry",
-    ["hello"] /*{
+  const ISRCRegistry = await hre.ethers.deployContract(
+    "ISRCRegistry"
+    /*["hello"] {
     value: lockedAmount,
   }*/
   );
 
-  await iSCRRegistry.waitForDeployment();
+  await ISRCRegistry.waitForDeployment();
 
-  console.log(`Deployed SSCRRegistry at address : ${iSCRRegistry.target}`);
+  console.log(`Deployed ISRCRegistry at address : ${ISRCRegistry.target}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
