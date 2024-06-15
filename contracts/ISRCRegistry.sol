@@ -3,15 +3,18 @@ pragma solidity ^0.8.9;
 
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
+import "./BridgedToken.sol";
 
 error ISRCRegistry_notAdmin();
 error ISRCRegistry_InvalideCode();
+error ISRCRegistry_NotBound(string ISRCCode);
+error ISRCRegistry_buyAllowanceFailed(string ISRCCode, address user);
 
 contract ISCRRegistry {
     /* error */
 
     /* data struct */
-    enum AuthType {
+    enum Allowance {
         NONE,
         SHORT,
         LIFE
@@ -26,7 +29,7 @@ contract ISCRRegistry {
     struct Usage {
         uint256 listenDuration;
         UserMode mode;
-        AuthType authType;
+        Allowance allowanceType;
     }
 
     struct ISRCSpec {
@@ -62,9 +65,45 @@ contract ISCRRegistry {
     /* deposit, fallback */
 
     /* external */
-    // buySong
+    // buySong // need to approve token
+    function buyAllowance(string calldata ISRCCode, address tokenAddress, uint256 amount)
+        external
+        payable
+        returns (bool)
+    {
+        if (!s_ISRCspecs[ISRCCode].isBound) {
+            revert ISRCRegistry_NotBound(ISRCCode);
+        }
 
+        // Suppose minPrice to be in usd
+        // => need amount conversion => need oracle and dex or bridge to swap
+
+        // POC : suppose to be paid in abETH (eth bridged to allfeat)
+        // tokenAddres should be the abETH address on allfeat
+
+        address artistAddress = getISRCSpec(ISRCCode).artistAddress;
+        setUserAllowance(ISRCCode, UserMode.PRIVATE, Allowance.LIFE);
+
+        // For POC allow AFT and abETH payment (cause of bridge failure)
+        // In this case need to find a way to have a price equivalence
+        uint256 amountToSend = amount;
+        bool result = true;
+        if (msg.value != 0) {
+            amountToSend = msg.value;
+            payable(artistAddress).transfer(amountToSend);
+        } else {
+            result = BridgedToken(tokenAddress).transferFrom(msg.sender, artistAddress, amount);
+        }
+
+        if (!result) {
+            revert ISRCRegistry_buyAllowanceFailed(ISRCCode, msg.sender);
+        }
+        return result;
+    }
     // rentSong
+
+    // revokeAdmin
+    /* public */
 
     /**
      * @notice checks vailidity of an ISRC code by requesting ISRC database
@@ -100,12 +139,26 @@ contract ISCRRegistry {
         s_ISRCspecs[ISRCCode] = spec;
     }
 
-    // updateISRCSpec (change price...)
-
-    // revokeAdmin
-    /* public */
+    /**
+     * @notice allows artist to update its new ISRC spec
+     * @param ISRCCode code to set
+     * @param minPrice min price to buy this song
+     */
+    function updateISRC(string calldata ISRCCode, uint256 minPrice) public {
+        if (!mockedCheckISRCValidity(ISRCCode, msg.sender)) {
+            revert ISRCRegistry_InvalideCode();
+        }
+        s_ISRCspecs[ISRCCode].minPrice = minPrice;
+        // other data..
+    }
 
     /* internal */
+    function setUserAllowance(string calldata ISRCCode, UserMode mode, Allowance newState) internal {
+        Usage memory usage;
+        usage.mode = mode;
+        usage.allowanceType = newState;
+        s_userToUsage[msg.sender][ISRCCode] = usage;
+    }
     // resolveArtist => get artist add from ISRC
 
     // payArtist
@@ -120,7 +173,11 @@ contract ISCRRegistry {
         return s_admin;
     }
 
-    function getISRCSpec(string calldata ISRCCode) external view returns (ISRCSpec memory) {
+    function getISRCSpec(string calldata ISRCCode) public view returns (ISRCSpec memory) {
         return s_ISRCspecs[ISRCCode];
+    }
+
+    function getUserUsage(string calldata ISRCCode, address user) public view returns (Usage memory) {
+        return s_userToUsage[user][ISRCCode];
     }
 }
