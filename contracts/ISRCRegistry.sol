@@ -11,6 +11,26 @@ error ISRCRegistry_NotBound(string ISRCCode);
 error ISRCRegistry_buyAllowanceFailed(string ISRCCode, address user);
 error ISRCRegistry_payArtistFailed(address artistAddress, address user);
 
+/**
+ * @title ISRCRegistry (hackathon project : AllTunes)
+ * @author ibourn (& AllTunes Team : ArnaudSene, YoannRDC)
+ *
+ * @notice this contract is intended to serve as a registry of listening rights to any sound when an ISRC is bound
+ * @notice thus any music player can broadcast music to a user according to his rights
+ * @notice any dapp can connect and a user has a 'universal' right to listen to whatever the player
+ * @notice 2 possible mode for user : PRIVATE or PRO
+ * @notice a private user can buy a lifetime rights (as if he'd bought a song in a store) or pay a subscription for a short time (rent)
+ *
+ * @notice NOT YET ADDED TO THE POC (due to loss of time with bridge project on allfeat) :
+ * @notice a pro user should fund a subscription vault giving access to a limited time to play use the song
+ * @notice a way to pay in usd equivalent token. The bridge will allow this
+ * @notice an oracle and dex to swap tokens and be abble to accept more tokens to pay
+ * @notice an oracle to fetch ISRC data from ISRC agency database to validate a code
+ *
+ * @notice IMPORTANT think about storage => huge amount of song and user can increase a lot the storage
+ * @notice test and study needs
+ * @notice a solution could be to have a main resolver contract allowing to have a "pagination" mechanism with child storage contract
+ */
 contract ISRCRegistry {
     /* error */
 
